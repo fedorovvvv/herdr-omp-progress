@@ -68,7 +68,31 @@ function todoOf(term) {
   if (!m || !Number(m[2])) return null;
   return { done: Number(m[1]), total: Number(m[2]), now: term.labels["agents.todoNow"] ?? "" };
 }
-const WATCHED = ["agents.subs", "agents.todo", "agents.todoNow"];
+// Subagents the agent started for the current prompt: `agents.tasks` ("2/5"), `agents.tasksPct`
+// (0-100, running ones counted by their own estimate), `agents.tasksNow`, `agents.tasksFail`.
+function tasksOf(term) {
+  const l = term?.labels ?? {};
+  const m = /^(\d+)\/(\d+)$/.exec(l["agents.tasks"] ?? "");
+  if (!m || !Number(m[2])) return null;
+  const pct = /^\d+$/.test(l["agents.tasksPct"] ?? "") ? Math.min(100, Number(l["agents.tasksPct"])) : null;
+  return { done: Number(m[1]), total: Number(m[2]), pct, now: l["agents.tasksNow"] ?? "", failed: Number(l["agents.tasksFail"]) || 0 };
+}
+const tasksText = (s) =>
+  `Subagents: ${s.done} of ${s.total} done${s.pct !== null ? `, ~${s.pct}% overall` : ""}${s.failed ? `, ${s.failed} failed` : ""}`;
+// What the progress line under the agent's name shows: the todo list when it keeps one,
+// else its subagents. `share` (0-1) fills the bar.
+function progressOf(term) {
+  const todo = todoOf(term);
+  const tasks = tasksOf(term);
+  if (todo) {
+    const extra = tasks ? `\n${tasksText(tasks)}` : "";
+    return { ...todo, kind: "todo", share: todo.done / todo.total, tip: `Todo: ${todo.done} of ${todo.total} done${todo.now ? ` — now: ${todo.now}` : ""}${extra}` };
+  }
+  if (!tasks) return null;
+  const share = tasks.pct !== null ? tasks.pct / 100 : tasks.done / tasks.total;
+  return { ...tasks, kind: "tasks", share, tip: `${tasksText(tasks)}${tasks.now ? ` — now: ${tasks.now}` : ""}` };
+}
+const WATCHED = ["agents.subs", "agents.todo", "agents.todoNow", "agents.tasks", "agents.tasksPct", "agents.tasksNow", "agents.tasksFail"];
 
 function duration(ms) {
   const m = Math.floor(ms / 60000);
@@ -232,21 +256,25 @@ export default class Agents extends View {
       .children(parts);
   }
 
-  // Todo progress: a thin bar, done/total, and the task in hand.
-  progress(t, todo, idle, address) {
-    const all = todo.done === todo.total;
+  // Progress: a thin bar, done/total (a branch icon before it for subagents), and the work in hand.
+  progress(t, p, idle, address) {
+    const all = p.done === p.total;
     const color = all ? t.done ?? t.working : t.working;
+    const fill = Math.round(34 * Math.min(1, Math.max(0, p.share)));
     return h_flex()
-      .id(`todo-${address}`)
+      .id(`progress-${address}`)
       .min_w(0)
       .gap(6)
       .items_center()
       .text_size(11)
       .text_color(t.dim)
-      .tooltip(`Todo: ${todo.done} of ${todo.total} done${todo.now ? ` — now: ${todo.now}` : ""}`)
-      .child(div().w(34).h(3).flex_none().rounded(2).bg(t.input).child(div().h_full().rounded(2).bg(idle ? t.dim : color).w(todo.done ? Math.max(2, Math.round((34 * todo.done) / todo.total)) : 0)))
-      .child(div().flex_none().text_color(idle ? t.dim : t.muted).child(`${todo.done}/${todo.total}`))
-      .when(Boolean(todo.now), (el) => el.child(div().flex_1().min_w(0).truncate().child(todo.now)));
+      .tooltip(p.tip)
+      .child(div().w(34).h(3).flex_none().rounded(2).bg(t.input).child(div().h_full().rounded(2).bg(idle ? t.dim : color).w(p.share > 0 ? Math.max(2, fill) : 0)))
+      .child(h_flex().flex_none().gap(2).items_center().text_color(idle ? t.dim : t.muted)
+        .when(p.kind === "tasks", (el) => el.child(svg("mods/workspace-chrome/git-branch.svg").size(10).flex_none()))
+        .child(div().child(`${p.done}/${p.total}`)))
+      .when(Boolean(p.failed), (el) => el.child(div().flex_none().text_color(t.blocked).child(`${p.failed} failed`)))
+      .when(Boolean(p.now), (el) => el.child(div().flex_1().min_w(0).truncate().child(p.now)));
   }
 
   peek(addr) {
@@ -270,12 +298,13 @@ export default class Agents extends View {
     const st = kidStatus(k, this.listed);
     const pic = icon(k.program, 14, t.foreground);
     const on = k.address === shown;
+    const progress = progressOf(k);
     return h_flex()
       .id(`sub-${k.address}`)
       .pl(39)
       .pr(8)
       .rounded(8)
-      .h(26)
+      .h(26 + (progress ? 14 : 0))
       .flex_none()
       .gap(0)
       .items_center()
@@ -287,7 +316,9 @@ export default class Agents extends View {
         .when(Boolean(l), el => el.border_l(1.5).border_color(t.input))
         .when(l === "└" || l === "├", el => el.border_b(1.5).rounded_bl(6))))
       .when(Boolean(pic), el => el.child(div().mr(8).child(pic)))
-      .child(div().flex_1().truncate().text_color(on ? t.foreground : t.muted).child(k.name || k.template || k.program?.name || k.address))
+      .child(v_flex().flex_1().min_w(0).gap(1).justify_center()
+        .child(div().min_w(0).truncate().text_color(on ? t.foreground : t.muted).child(k.name || k.template || k.program?.name || k.address))
+        .when(Boolean(progress), (el) => el.child(this.progress(t, progress, st === "idle", k.address))))
       .when(Boolean(this.subs(t, k)), (el) => el.child(div().mr(6).child(this.subs(t, k))))
       .child(this.status(t, { status: st }, compact));
   }
@@ -419,11 +450,11 @@ export default class Agents extends View {
       const own = more ?? (/^\d+$/.test(label(a)) ? a.program?.name || label(a) : label(a));
       const space = full ? a.space_name || null : null;
       const name = space ? own || space : own;
-      const todo = todoOf(byAddress.get(a.address));
+      const progress = progressOf(byAddress.get(a.address));
       return h_flex()
         .id(`ag-${a.address}`)
         .px(8)
-        .h(30 + (space ? 12 : 0) + (todo ? 14 : 0))
+        .h(30 + (space ? 12 : 0) + (progress ? 14 : 0))
         .flex_none()
         .rounded(8)
         .items_center()
@@ -446,7 +477,7 @@ export default class Agents extends View {
         .child(v_flex().flex_1().min_w(0).gap(1).justify_center()
           .when(Boolean(space), el => el.child(div().min_w(0).truncate().text_size(11).text_color(t.dim).child(space)))
           .child(div().min_w(0).truncate().text_color(idle ? t.muted : t.foreground).child(name))
-          .when(Boolean(todo), el => el.child(this.progress(t, todo, idle, a.address))))
+          .when(Boolean(progress), el => el.child(this.progress(t, progress, idle, a.address))))
         .when(Boolean(machine), el => el.child(div().text_size(10).text_color(t.dim).child(machine)))
         .when(subs.length > 0, el => el.child(fold(a, subs)))
         .when(Boolean(this.subs(t, byAddress.get(a.address))), el => el.child(this.subs(t, byAddress.get(a.address))))
