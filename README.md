@@ -1,4 +1,4 @@
-# herdr-omp-agents
+# herdr-omp-progress
 
 Shows what [omp](https://github.com/can1357/oh-my-pi) agents are doing in the
 [Herdr](https://herdr.dev) desktop app's **Agents** panel and in omp's own status line:
@@ -31,8 +31,8 @@ The extensions talk to Herdr only through `hc label`, so they do nothing outside
 ## Install
 
 ```sh
-git clone https://github.com/fedorovvvv/herdr-omp-agents.git
-cd herdr-omp-agents
+git clone https://github.com/fedorovvvv/herdr-omp-progress.git
+cd herdr-omp-progress
 ./install.sh            # symlinks; `git pull` updates in place
 ./install.sh --copy     # copies instead
 ./install.sh --uninstall
