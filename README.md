@@ -7,6 +7,16 @@ Shows what [omp](https://github.com/can1357/oh-my-pi) agents are doing in the
 - **Todo progress**: a progress bar, `done/total`, and the task in hand, under the agent's name.
 - **omp status line**: `☑ 4/11 Current task` in the `status` segment.
 
+![Agents panel with todo progress and subagent counts](preview.png)
+
+A real omp session: the todo list it is working through shows under its name in Herdr…
+
+![Agent row in Herdr](docs/agents-row.png)
+
+…and in omp's own status line.
+
+![omp status line](docs/status-line.png)
+
 ## Parts
 
 | Path | What it does |
