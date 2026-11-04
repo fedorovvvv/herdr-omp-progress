@@ -13,7 +13,7 @@ Shows what [omp](https://github.com/can1357/oh-my-pi) agents are doing in the
 | --- | --- |
 | `omp/extensions/herdr-subagent-count.ts` | Publishes working subagents on the herdr terminal as the label `agents.subs` (`"2,1"`). |
 | `omp/extensions/herdr-todo-progress.ts` | Publishes the main session's todo list as `agents.todo` (`"4/11"`) and `agents.todoNow`, and sets the omp status `todo`. |
-| `herdr/mods/agents-stacked/` | Agents panel (a fork of Herdr's built-in `agents` mod 0.1.12) that draws those labels. |
+| `mods/agents-stacked/` | Agents panel (a fork of Herdr's built-in `agents` mod 0.1.12) that draws those labels. See [RECIPE.md](RECIPE.md). |
 
 The extensions talk to Herdr only through `hc label`, so they do nothing outside Herdr
 (except the status line, which works anywhere).

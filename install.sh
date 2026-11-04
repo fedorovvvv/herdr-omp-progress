@@ -34,7 +34,7 @@ for f in "$ROOT"/omp/extensions/*.ts; do
   place "$f" "$OMP_EXT/$(basename "$f")"
 done
 for f in main.js mod.json; do
-  place "$ROOT/herdr/mods/agents-stacked/$f" "$HERDR_MODS/agents-stacked/$f"
+  place "$ROOT/mods/agents-stacked/$f" "$HERDR_MODS/agents-stacked/$f"
 done
 
 [ "$MODE" = uninstall ] || echo "Done. Restart running omp sessions to load the extensions; herdr reloads the mod on its own."
