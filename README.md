@@ -28,6 +28,7 @@ A real omp session: the todo list it is working through shows under its name in 
 | `omp/extensions/herdr-subagent-count.ts` | Publishes working subagents on the herdr terminal as the label `agents.subs` (`"2,1"`). |
 | `omp/extensions/herdr-todo-progress.ts` | Publishes the main session's todo list as `agents.todo` (`"4/11"`) and `agents.todoNow`, and sets the omp status `todo`. |
 | `omp/extensions/herdr-subagent-progress.ts` | Publishes the subagents of the current prompt as `agents.tasks` (`"2/5"`), `agents.tasksPct`, `agents.tasksNow`, `agents.tasksFail`, and sets the omp status `subagents`. |
+| `omp/extensions/herdr-session-label.ts` | Publishes the id of the main omp session as the label `agents.session` (removed when the session leaves). [herdr-agent-bridge](https://gitlab.com/adstail/herdr-agent-bridge)'s `bridge-trail` uses it to tie a session log to its terminal exactly. |
 | `mods/agents-stacked/` | Agents panel (a fork of Herdr's built-in `agents` mod 0.1.12) that draws those labels. See [RECIPE.md](RECIPE.md). |
 
 The extensions talk to Herdr only through `hc label`, so they do nothing outside Herdr
