@@ -92,7 +92,17 @@ function progressOf(term) {
   const share = tasks.pct !== null ? tasks.pct / 100 : tasks.done / tasks.total;
   return { ...tasks, kind: "tasks", share, tip: `${tasksText(tasks)}${tasks.now ? ` — now: ${tasks.now}` : ""}` };
 }
-const WATCHED = ["agents.subs", "agents.todo", "agents.todoNow", "agents.tasks", "agents.tasksPct", "agents.tasksNow", "agents.tasksFail"];
+// OPTIONAL agent-bridge chips (mission + pipeline step) under the agent: from the terminal's labels
+// `bridge.mission` / `bridge.stage` ("<pipeline>:<stage>"), else shared("bridge").agents[address]
+// (published by herdr-agent-bridge's bridge-core). Neither present: nothing is drawn.
+function bridgeOf(term) {
+  const l = term?.labels ?? {};
+  const f = shared("bridge")?.agents?.[term?.address] ?? {};
+  const mission = l["bridge.mission"] || f.mission || null;
+  const stage = l["bridge.stage"] || f.stage || null;
+  return mission || stage ? { mission, stage } : null;
+}
+const WATCHED = ["agents.subs", "agents.todo", "agents.todoNow", "agents.tasks", "agents.tasksPct", "agents.tasksNow", "agents.tasksFail", "bridge.mission", "bridge.stage"];
 
 function duration(ms) {
   const m = Math.floor(ms / 60000);
@@ -277,6 +287,13 @@ export default class Agents extends View {
       .when(Boolean(p.now), (el) => el.child(div().flex_1().min_w(0).truncate().child(p.now)));
   }
 
+  bridgeChips(t, b, idle) {
+    const chip = (text, c, tip) => div().flex_none().max_w(110).h(15).px(5).rounded(4).truncate().flex().items_center().text_size(10).font_semibold().text_color(idle ? t.dim : c).bg((idle ? t.dim : c) + "1f").tooltip(tip).child(text);
+    return h_flex().gap(4).items_center().min_w(0)
+      .when(Boolean(b.mission), (el) => el.child(chip(b.mission, t.ansi6, `Bridge mission: ${b.mission}`)))
+      .when(Boolean(b.stage), (el) => el.child(chip(b.stage, t.ansi3, `Bridge pipeline step: ${b.stage}`)));
+  }
+
   peek(addr) {
     run("terminal.peek", { terminal: addr });
   }
@@ -451,10 +468,11 @@ export default class Agents extends View {
       const space = full ? a.space_name || null : null;
       const name = space ? own || space : own;
       const progress = progressOf(byAddress.get(a.address));
+      const bridge = bridgeOf(byAddress.get(a.address));
       return h_flex()
         .id(`ag-${a.address}`)
         .px(8)
-        .h(30 + (space ? 12 : 0) + (progress ? 14 : 0))
+        .h(30 + (space ? 12 : 0) + (progress ? 14 : 0) + (bridge ? 17 : 0))
         .flex_none()
         .rounded(8)
         .items_center()
@@ -477,7 +495,8 @@ export default class Agents extends View {
         .child(v_flex().flex_1().min_w(0).gap(1).justify_center()
           .when(Boolean(space), el => el.child(div().min_w(0).truncate().text_size(11).text_color(t.dim).child(space)))
           .child(div().min_w(0).truncate().text_color(idle ? t.muted : t.foreground).child(name))
-          .when(Boolean(progress), el => el.child(this.progress(t, progress, idle, a.address))))
+          .when(Boolean(progress), el => el.child(this.progress(t, progress, idle, a.address)))
+          .when(Boolean(bridge), el => el.child(this.bridgeChips(t, bridge, idle))))
         .when(Boolean(machine), el => el.child(div().text_size(10).text_color(t.dim).child(machine)))
         .when(subs.length > 0, el => el.child(fold(a, subs)))
         .when(Boolean(this.subs(t, byAddress.get(a.address))), el => el.child(this.subs(t, byAddress.get(a.address))))

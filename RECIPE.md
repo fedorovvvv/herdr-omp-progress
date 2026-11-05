@@ -46,6 +46,7 @@ Top to bottom, in the sidebar region the layout gives the mod (`t.chrome` backgr
   fold them. Click a group header: fold the group.
 - Click the subagent chip: switch total ↔ per level (shared setting `agents.subsView`).
 - Hover a row: the time becomes a pin; pinned agents go to a Pinned group on top.
+- Optional agent-bridge chips: an agent whose terminal has the labels `bridge.mission` / `bridge.stage` (`<pipeline>:<stage>`), or is listed in `shared("bridge").agents[address]` (herdr-agent-bridge), gets up to two 15px chips under its name and progress line (mission in `t.ansi6`, step in `t.ansi3`, 10px, max 110px, tooltips `Bridge mission: …` / `Bridge pipeline step: …`; row +17px). Without them nothing changes.
 - Hover the progress line: tooltip `Todo: 3 of 8 done — now: <task>`, or
   `Subagents: 2 of 5 done, ~48% overall, 1 failed — now: <subagent>`; with both, the todo
   tooltip gains the subagent line.

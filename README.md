@@ -8,6 +8,7 @@ Shows what [omp](https://github.com/can1357/oh-my-pi) agents are doing in the
 - **Subagent progress**, for sessions that delegate instead of keeping a todo list: the same
   line with a branch icon, `⑂ 2/5`, the subagent the session is waiting on, and failures.
   The bar counts running subagents by their own completion estimate.
+- **agent-bridge chips** (optional): a mission chip and a pipeline-step chip under an agent that carries the labels `bridge.mission` / `bridge.stage`, or is listed in `shared("bridge").agents` (published by herdr-agent-bridge); nothing is drawn without them.
 - **omp status line**: `☑ 4/11 Current task` and `⑂ 2/5 40% Waiting on` in the `status` segment.
 
 ![Agents panel with todo progress and subagent counts](preview.png)
